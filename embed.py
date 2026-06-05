@@ -88,12 +88,16 @@ def build_store():
 def _detect_course(query):
     """
     Extract and normalize a course number from the query string.
-    Handles formats like 'CSC 1301', 'CSC1301', 'DATA1501'.
+    Handles formats like 'CSC 1301', 'CSC1301', 'CS1301', 'DATA1501'.
+    'CS' is normalized to 'CSC' to match stored metadata.
     Returns a normalized string (e.g. 'CSC1301') or None.
     """
-    m = re.search(r"\b(CSC|DATA)\s?(\d{4})\b", query, re.IGNORECASE)
+    m = re.search(r"\b(CSC|CS|DATA)\s?(\d{4})\b", query, re.IGNORECASE)
     if m:
-        return m.group(1).upper() + m.group(2)
+        prefix = m.group(1).upper()
+        if prefix == "CS":
+            prefix = "CSC"
+        return prefix + m.group(2)
     return None
 
 
