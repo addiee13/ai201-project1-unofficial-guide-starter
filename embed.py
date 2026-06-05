@@ -7,6 +7,7 @@ Run once to build the ChromaDB vector store:
 The retrieve() function is imported by app.py in Milestone 5.
 """
 
+import re
 import chromadb
 from sentence_transformers import SentenceTransformer
 from ingest import load_chunks
@@ -84,9 +85,25 @@ def build_store():
 # Retrieval function (imported by app.py)
 # ---------------------------------------------------------------------------
 
-def retrieve(query, k=5):
+def _detect_course(query):
+    """
+    Extract and normalize a course number from the query string.
+    Handles formats like 'CSC 1301', 'CSC1301', 'DATA1501'.
+    Returns a normalized string (e.g. 'CSC1301') or None.
+    """
+    m = re.search(r"\b(CSC|DATA)\s?(\d{4})\b", query, re.IGNORECASE)
+    if m:
+        return m.group(1).upper() + m.group(2)
+    return None
+
+
+def retrieve(query, k=8):
     """
     Return the top-k most relevant chunks for a query string.
+
+    If the query contains a course number (e.g. CSC1301), retrieval is
+    restricted to chunks where metadata.course matches — preventing
+    cross-course contamination on comparison queries.
 
     Each result dict contains:
       text      — the embedded chunk text
@@ -97,12 +114,25 @@ def retrieve(query, k=5):
     collection = _get_collection()
 
     query_embedding = model.encode([query]).tolist()
+    course = _detect_course(query)
 
-    results = collection.query(
+    query_kwargs = dict(
         query_embeddings=query_embedding,
         n_results=k,
         include=["documents", "metadatas", "distances"],
     )
+    if course:
+        query_kwargs["where"] = {"course": course}
+
+    try:
+        results = collection.query(**query_kwargs)
+    except Exception:
+        # Fallback: if filtered count < k, retry without the filter
+        results = collection.query(
+            query_embeddings=query_embedding,
+            n_results=k,
+            include=["documents", "metadatas", "distances"],
+        )
 
     return [
         {
