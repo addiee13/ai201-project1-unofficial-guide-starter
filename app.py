@@ -16,7 +16,8 @@ def handle_query(question):
         return "Please enter a question.", ""
 
     result = ask(question)
-    sources = "\n".join(f"  {s}" for s in result["sources"])
+    declined = "I don't have enough information" in result["answer"]
+    sources = "" if declined else "\n".join(f"  {s}" for s in result["sources"])
     return result["answer"], sources
 
 

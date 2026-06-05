@@ -27,7 +27,7 @@ If the provided reviews do not contain enough information to answer the question
 Never fabricate reviews, ratings, or opinions."""
 
 
-def ask(question, k=5):
+def ask(question, k=8):
     """
     Retrieve relevant chunks and generate a grounded answer.
 

@@ -128,15 +128,49 @@ def retrieve(query, k=8):
     if course:
         query_kwargs["where"] = {"course": course}
 
-    try:
-        results = collection.query(**query_kwargs)
-    except Exception:
-        # Fallback: if filtered count < k, retry without the filter
-        results = collection.query(
-            query_embeddings=query_embedding,
-            n_results=k,
-            include=["documents", "metadatas", "distances"],
-        )
+    results = collection.query(**query_kwargs)
+
+    if course:
+        raw = list(zip(
+            results["documents"][0],
+            results["metadatas"][0],
+            results["distances"][0],
+        ))
+        if len(raw) < k:
+            # Fewer matching chunks than k — fall back to unfiltered
+            results = collection.query(
+                query_embeddings=query_embedding,
+                n_results=k,
+                include=["documents", "metadatas", "distances"],
+            )
+        else:
+            # Diversity cap: pull a wider pool and take at most 2 chunks per
+            # professor so comparison queries surface all relevant professors
+            # rather than letting one dominate all k slots.
+            wide = collection.query(
+                query_embeddings=query_embedding,
+                n_results=min(k * 6, 100),
+                where={"course": course},
+                include=["documents", "metadatas", "distances"],
+            )
+            seen: dict[str, int] = {}
+            diverse: list = []
+            for doc, meta, dist in zip(
+                wide["documents"][0],
+                wide["metadatas"][0],
+                wide["distances"][0],
+            ):
+                prof = meta.get("professor", "")
+                if seen.get(prof, 0) < 2:
+                    diverse.append((doc, meta, dist))
+                    seen[prof] = seen.get(prof, 0) + 1
+                if len(diverse) == k:
+                    break
+
+            return [
+                {"text": doc, "metadata": meta, "distance": round(dist, 4)}
+                for doc, meta, dist in diverse
+            ]
 
     return [
         {

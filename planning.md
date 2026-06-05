@@ -17,17 +17,17 @@ The domain I chose is GSU CS professor reviews for core undergraduate courses. I
 
 | # | Source | Description | URL or location |
 |---|--------|-------------|-----------------|
-| 1 | Rate My Professors | Abdullah Bal — student reviews, CSC4520 / CSC6260 / CSC3210 | docs/professor_bal.md |
-| 2 | Rate My Professors | Sayed Hossein Esfahani — student reviews, CSC1301 | docs/professor_esfahani.md |
-| 3 | Rate My Professors | Lan Gao — student reviews, CSC3210 | docs/professor_gao.md |
-| 4 | Rate My Professors | William Johnson — student reviews, CSC1302 | docs/professor_johnson.md |
-| 5 | Rate My Professors | Amin Karim — student reviews, CSC1301 | docs/professor_karim.md |
-| 6 | Rate My Professors | Kiril Kuzmin — student reviews, CSC4520 / CSC2510 / DATA1501 | docs/professor_kuzmin.md |
-| 7 | Rate My Professors | Md Mahfuzur Rahman — student reviews, CSC3320 | docs/professor_rahman.md |
-| 8 | Rate My Professors | Rajshekhar Sunderraman — student reviews, CSC1301 | docs/professor_sunderraman.md |
-| 9 | Rate My Professors | Farhan Tanvir — student reviews, CSC4760 | docs/professor_tanvir.md |
-| 10 | Rate My Professors | Islam S M Towhidul — student reviews, CSC3320 / CSC2720 / CSC1302 | docs/professor_towhidul.md |
-| 11 | Rate My Professors | Yanqing Zhang — student reviews, CSC4810 | docs/professor_zhang.md |
+| 1 | Rate My Professors | Abdullah Bal — student reviews, CSC4520 / CSC6260 / CSC3210 | https://www.ratemyprofessors.com/professor/2942443 |
+| 2 | Rate My Professors | Sayed Hossein Esfahani — student reviews, CSC1301 | https://www.ratemyprofessors.com/professor/2358126 |
+| 3 | Rate My Professors | Lan Gao — student reviews, CSC3210 | https://www.ratemyprofessors.com/professor/3075860 |
+| 4 | Rate My Professors | William Johnson — student reviews, CSC1302 | https://www.ratemyprofessors.com/professor/2329806 |
+| 5 | Rate My Professors | Amin Karim — student reviews, CSC1301 | https://www.ratemyprofessors.com/professor/2834543 |
+| 6 | Rate My Professors | Kiril Kuzmin — student reviews, CSC4520 / CSC2510 / DATA1501 | https://www.ratemyprofessors.com/professor/2782285 |
+| 7 | Rate My Professors | Md Mahfuzur Rahman — student reviews, CSC3320 | https://www.ratemyprofessors.com/professor/2519939 |
+| 8 | Rate My Professors | Rajshekhar Sunderraman — student reviews, CSC1301 | https://www.ratemyprofessors.com/professor/2614203 |
+| 9 | Rate My Professors | Farhan Tanvir — student reviews, CSC4760 | https://www.ratemyprofessors.com/professor/2962612 |
+| 10 | Rate My Professors | Islam S M Towhidul — student reviews, CSC3320 / CSC2720 / CSC1302 | https://www.ratemyprofessors.com/professor/2921056 |
+| 11 | Rate My Professors | Yanqing Zhang — student reviews, CSC4810 | https://www.ratemyprofessors.com/professor/1806387 |
 
 ---
 

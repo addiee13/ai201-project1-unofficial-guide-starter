@@ -146,19 +146,26 @@ These chunks are relevant because the query names a specific professor and asks 
 | 1 | 0.646 | Md Mahfuzur Rahman | CSC3320 | "extra credit for tophat assignments and attendence which can boost a lot..." |
 | 2 | 0.646 | Md Mahfuzur Rahman | CSC3320 | "Lots of extra credit opportunities (up to 7 pts)..." |
 | 3 | 0.647 | Md Mahfuzur Rahman | CSC3320 | "...exams are ridiculously long. he does not respond to emails..." |
+| 4 | 0.671 | Md Mahfuzur Rahman | CSC3320 | "he genuinely wants to fail you..." |
+| 5 | 0.680 | Md Mahfuzur Rahman | CSC3320 | "...very tough grader. Lots of extra credit opportunities (up to 7 pts)..." |
+| 6 | 0.724 | Md Mahfuzur Rahman | CSC3320 | "He gave massive free points at the end..." |
+| 7 | 0.801 | Md Mahfuzur Rahman | CSC4320 | "Too many projects..." |
+| 8 | 0.811 | Md Mahfuzur Rahman | CSC3320 | "Those 5 bonus points make a huge difference..." |
 
-The top two chunks directly mention extra credit with specific details (TopHat assignments, 7 bonus points), making this a strong retrieval result. Distances are consistent around 0.646–0.647, reflecting that several reviews mention extra credit in similar terms.
+The top chunks directly mention extra credit with specific details (TopHat assignments, 7 bonus points), making this a strong retrieval result. Distances are consistent around 0.646–0.680 for the most relevant chunks.
 
-**Query 3: "Which professor should I take for CSC 1301?" (with course metadata filter)**
+**Query 3: "Which professor should I take for CSC 1301?" (with course filter + professor diversity cap)**
 
 | Rank | Distance | Professor | Course | Snippet |
 |------|----------|-----------|--------|---------|
 | 1 | 0.801 | Rajshekhar Sunderraman | CSC1301 | "Probably the best professor you'll ever have..." |
-| 2 | 0.848 | Rajshekhar Sunderraman | CSC1301 | "...assignments are difficult but professor is excellent..." |
+| 2 | 0.848 | Rajshekhar Sunderraman | CSC1301 | "...I would recommend him to anyone..." |
 | 3 | 0.897 | Sayed Hossein Esfahani | CSC1301 | "one of the best professors I've ever had..." |
-| 4 | 0.942 | Sayed Hossein Esfahani | CSC1301 | "Don't take bros class unless you already have experience with coding..." |
+| 4 | 0.942 | Sayed Hossein Esfahani | CSC1301 | "Don't take if you have no experience with coding..." |
+| 5 | 0.982 | Amin Karim | CSC1301 | "Professor Karim is one of the great professors..." |
+| 6 | 0.984 | Amin Karim | CSC1301 | "Good professor. Exams are straightforward..." |
 
-The course metadata filter (`where={"course": "CSC1301"}`) restricts retrieval to CSC1301 chunks only, preventing unrelated courses from dominating the results. Without the filter, this query returned CSC1302 and CSC3210 reviews. Distances are higher here (~0.80–0.94) because the query is a general recommendation question that doesn't share vocabulary with individual reviews.
+The course metadata filter restricts retrieval to CSC1301 chunks. A professor diversity cap (at most 2 chunks per professor) then ensures all three CSC1301 instructors appear in the results — without it, Sunderraman's semantically strong reviews would fill all 8 slots and Karim would not appear at all (his first chunk ranks 9th without diversity capping). This is why Distances are higher for Karim (~0.98) than for Sunderraman (~0.80) — his reviews use less "recommendation" language, so they score lower on this query's embedding.
 
 ---
 
@@ -166,11 +173,11 @@ The course metadata filter (`where={"course": "CSC1301"}`) restricts retrieval t
 
 | # | Question | Expected answer | System response (summarized) | Retrieval quality | Response accuracy |
 |---|----------|-----------------|------------------------------|-------------------|-------------------|
-| 1 | Which professor should I take for CSC 1301? | Karim (4.8/5), Sunderraman (4.8/5), Esfahani (2.5/5) | Compared Sunderraman and Esfahani — Sunderraman described as highly recommended, Esfahani more mixed. Karim omitted because all 8 retrieval slots filled before his chunks appeared. | Partially relevant — correct course, missing one professor | Partially accurate |
+| 1 | Which professor should I take for CSC 1301? | Karim (4.8/5), Sunderraman (4.8/5), Esfahani (2.5/5) | Correctly surfaced all three CSC1301 professors. Described Sunderraman as highly recommended, Esfahani as mixed (some negative reviews about difficulty), and Karim as a great professor with an easy class. Did not cite aggregate ratings (4.8/5, 96% take-again) — those are in summary chunks not retrieved here. | Relevant — all three professors present | Accurate |
 | 2 | What kind of professor is Abdullah Bal? | Well-structured, attendance essential, exams based on class examples, mixed feedback on communication | Described as caring and effective with easy-to-follow lectures, but noted slowness to grade and lack of study materials. Balanced and grounded in reviews. | Relevant | Accurate |
-| 3 | Does Professor Rahman offer extra credit? | Yes — up to 7 bonus points via TopHat and attendance | Confirmed extra credit, quoted specific reviews including the 7-point detail. | Relevant | Accurate |
-| 4 | What is Professor Esfahani's attendance policy? | Mandatory, tracked through Kahoot at end of class | Correctly identified mandatory attendance and Kahoot-based tracking, noted flexibility for late arrivals who still complete the Kahoot. | Partially relevant — right professor, distances 0.72–0.88 | Accurate |
-| 5 | Is Professor Karim good for a student with no coding experience? | Yes — student went from zero CS experience to working on an AI startup | Confirmed yes, cited the exact student quote about going from no experience to an AI startup. | Relevant | Accurate |
+| 3 | Does Professor Rahman offer extra credit? | Yes — up to 7 bonus points via TopHat and attendance | Confirmed extra credit with four distinct review quotes, including the 7-point detail, TopHat assignments, and bonus homework points. | Relevant | Accurate |
+| 4 | What is Professor Esfahani's attendance policy? | Mandatory, tracked through Kahoot at end of class | Correctly identified mandatory Kahoot-based attendance and explicitly noted the late-arrival flexibility (marked present if Kahoot still completed). | Relevant | Accurate |
+| 5 | Is Professor Karim good for a student with no coding experience? | Yes — student went from zero CS experience to working on an AI startup | Confirmed yes and cited the exact student quote about going from no experience to working on an AI startup. | Relevant | Accurate |
 
 **Retrieval quality:** Relevant / Partially relevant / Off-target
 **Response accuracy:** Accurate / Partially accurate / Inaccurate
@@ -183,9 +190,9 @@ The course metadata filter (`where={"course": "CSC1301"}`) restricts retrieval t
 
 **What the system returned (before fix):** The system returned "I don't have enough information in the available reviews to answer that." The retrieved chunks were from William Johnson (CSC1302), Lan Gao (CSC3210), and Kiril Kuzmin (CSC4520) — all wrong courses. None of the three CSC1301 professors (Karim, Esfahani, Sunderraman) appeared in the results.
 
-**Root cause (tied to a specific pipeline stage):** Retrieval stage. The query "Which professor should I take for CSC 1301?" is a course-recommendation question, and `all-MiniLM-L6-v2` embedded it based on its general meaning — "which professor is good." Course numbers like "CSC1301" are treated as low-frequency tokens with weak semantic weight. The embedding similarity matched on "good professor" language in Johnson and Kuzmin reviews instead of on the course number. Since retrieval is purely semantic with no course awareness, it had no mechanism to prioritize CSC1301 chunks.
+**Root cause (tied to a specific pipeline stage):** Retrieval stage. The query "Which professor should I take for CSC 1301?" is a course-recommendation question, and `all-MiniLM-L6-v2` embedded it based on its general meaning — "which professor is good." Course numbers like "CSC1301" are treated as low-frequency tokens with weak semantic weight. The embedding similarity matched on "good professor" language in Johnson and Kuzmin reviews instead of on the course number. Since retrieval was purely semantic with no course awareness, it had no mechanism to prioritize CSC1301 chunks.
 
-**What you would change to fix it:** Course number detection + metadata filtering, which was implemented after this failure was observed. The `retrieve()` function now uses a regex to detect course numbers in the query (e.g., `CSC\s?\d{4}`) and passes a ChromaDB `where={"course": "CSC1301"}` filter, restricting results to chunks from that course only. After this fix, retrieval returned CSC1301 reviews from Sunderraman and Esfahani. The remaining limitation is that with k=8 and only two professors' chunks filling the slots, Karim's reviews were not retrieved — a partial improvement, not a complete fix.
+**How it was fixed — two-stage pipeline change:** First, course number detection + metadata filtering was added to `retrieve()`. A regex extracts `CSC\s?\d{4}` from the query and passes a ChromaDB `where={"course": "CSC1301"}` filter, restricting the candidate pool to the correct course. Second, after discovering that even with the filter, Sunderraman's semantically strong reviews dominated all k slots (Karim first appeared at rank 9 out of 37 CSC1301 chunks), a professor diversity cap was added: the retriever pulls a pool of up to `k*6` filtered chunks and takes at most 2 per professor before returning the final k. This guarantees all CSC1301 instructors appear in context regardless of individual chunk ranking. After both fixes, all three professors — Sunderraman, Esfahani, and Karim — appear in Q1 results.
 
 ---
 
@@ -193,7 +200,7 @@ The course metadata filter (`where={"course": "CSC1301"}`) restricts retrieval t
 
 **One way the spec helped you during implementation:** The embed/metadata split decision made in `planning.md` before any code was written directly enabled the metadata filtering fix during implementation. Because the spec required storing `course`, `professor`, `quality`, `difficulty`, and other fields as ChromaDB metadata rather than embedding them, the course number was available as a queryable field the moment retrieval failed. If course had been embedded into the text only, adding a filter would have required re-ingesting and re-chunking everything. The spec decision paid off immediately.
 
-**One way your implementation diverged from the spec, and why:** The spec specified `top-k = 5` for retrieval. During evaluation, Q4 (Esfahani attendance) returned all 5 results from the right professor but with distances between 0.72 and 0.88 — higher than ideal. To increase the chance of retrieving a chunk that explicitly mentions Kahoot, k was increased to 8. Additionally, the course metadata filter was not in the original spec — it was added after Q1 failed during evaluation. The spec anticipated the failure but proposed summary chunks as the mitigation; the actual fix turned out to be direct metadata filtering, which was simpler and more reliable.
+**One way your implementation diverged from the spec, and why:** The spec specified `top-k = 5` for retrieval. During evaluation, Q4 (Esfahani attendance) returned all 5 results from the right professor but with distances between 0.72 and 0.88 — higher than ideal. To increase the chance of retrieving a chunk that explicitly mentions Kahoot, k was increased to 8. Additionally, the course metadata filter and professor diversity cap were not in the original spec — both were added after evaluation failures were observed. The spec anticipated the Q1 multi-professor failure and proposed summary chunks as the mitigation; the actual fix turned out to be metadata filtering plus diversity-capped retrieval, which was more reliable than relying on summary chunk ranking.
 
 ---
 
