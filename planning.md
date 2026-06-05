@@ -47,7 +47,9 @@ The domain I chose is GSU CS professor reviews for core undergraduate courses. I
 
 **Embedding model:** `all-MiniLM-L6-v2` via `sentence-transformers`. Runs locally — no API key, no rate limits, no cost. Input limit is 256 tokens, which is sufficient for review-level chunks (one verbatim review + metadata header stays well under that limit).
 
-**Top-k:** 5. Retrieving 5 chunks is enough to surface multiple reviews about the same professor for a specific query, while avoiding context dilution from loosely related results. If a query asks about a specific professor and course, 5 chunks should consistently cover that combination without pulling in unrelated professors.
+**Top-k:** 8 (updated from 5 during implementation). Increased after evaluation showed that Q4 (attendance policy) returned all correct-professor chunks but with distances between 0.72–0.88, indicating weak match. A higher k improves recall for sparse queries without significantly diluting precision for specific-professor queries.
+
+**Metadata filtering (added during implementation):** After Q1 ("Which professor should I take for CSC 1301?") failed evaluation by retrieving CSC1302 and CSC3210 reviews, a course detection step was added to `retrieve()`. A regex extracts course numbers from the query (e.g., `CSC\s?\d{4}`) and passes a ChromaDB `where={"course": "CSC1301"}` filter, restricting retrieval to chunks where the course metadata field matches. This works because course numbers were stored as metadata fields during chunking — a decision made in the embed/metadata split that enabled this fix without any re-ingestion. If the filter returns fewer results than k, the function falls back to unfiltered retrieval automatically.
 
 **Production tradeoff reflection:** For a real deployment, the main tradeoffs to weigh when choosing an embedding model are: (1) **Context length** — `all-MiniLM-L6-v2`'s 256-token limit is fine for short reviews but would truncate longer documents like syllabi or housing guides; models like `text-embedding-3-small` (OpenAI) support up to 8191 tokens. (2) **Accuracy on domain-specific text** — general-purpose models like MiniLM are trained on web text and perform well on opinion/review language, but a fine-tuned model on academic or student-written text could improve retrieval precision. (3) **Multilingual support** — not a concern here since all reviews are in English, but a multilingual model like `paraphrase-multilingual-MiniLM-L12-v2` would be necessary for a broader student population. (4) **Latency and cost** — local models have zero marginal cost and no network latency but require compute on the host machine; API-hosted models (OpenAI, Cohere) offload compute but add per-token cost and network dependency. For this corpus size (~200 chunks), local inference is the right call.
 
@@ -87,7 +89,7 @@ flowchart LR
 
     D["Vector Store\n──────────────\nChromaDB (local)\nStores vectors +\nmetadata fields:\nprofessor, course,\nquality, difficulty,\ndate, grade, tags"]
 
-    E["Retrieval\n──────────────\nChromaDB semantic search\ntop-k = 5\nReturns chunks +\nsource metadata\nfor attribution"]
+    E["Retrieval\n──────────────\nChromaDB semantic search\ntop-k = 8\nCourse metadata filter\nif query contains CSC/DATA\nReturns chunks +\nsource metadata\nfor attribution"]
 
     F["Generation\n──────────────\nGroq API\nllama-3.3-70b-versatile\nAnswers from retrieved\ncontext only\nIncludes source citation\nin every response"]
 
