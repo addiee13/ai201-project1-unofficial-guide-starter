@@ -26,6 +26,14 @@ Student reviews of CS professors at Georgia State University, focused on core un
 
 ---
 
+## Document Ingestion Pipeline
+
+The raw source documents were collected ahead of time and saved locally as professor-specific Markdown files in `docs/`. Each file contains one professor page's student reviews plus summary fields copied from Rate My Professors, so the application does not scrape live websites at query time.
+
+`ingest.py` loads every `professor_*.md` file from `docs/`, normalizes the two source formats found across the corpus, and converts them into a consistent chunk structure. During preprocessing, only substantive review content is kept for embedding: professor name, course, rating, date, verbatim review text, and any review-level key points. Boilerplate or non-semantic fields such as `SOURCE_ID`, rating distribution summaries, `thumbs_up`, `for_credit`, and similar structured fields are excluded from the embedded text and stored only as metadata in ChromaDB.
+
+---
+
 ## Chunking Strategy
 
 **Chunk size:** ~300–600 characters per chunk, naturally varying by review length. No fixed character limit is enforced — each chunk maps to exactly one student review.
@@ -107,21 +115,27 @@ The system prompt uses the word "ONLY" explicitly and lists specific prohibition
 
 **How source attribution is surfaced in the response:** Source attribution is built programmatically from chunk metadata — not left to the LLM. After generation, the `ask()` function collects the `source` field from each retrieved chunk's metadata and returns a deduplicated list of source filenames alongside the answer. The Gradio interface displays these in a separate "Retrieved from" panel. This guarantees attribution is present even if the LLM forgets to cite in its response.
 
-**Example response with source citation:**
+**Example response 1 with source attribution (one validated run):**
 
 > Question: Does Professor Rahman offer extra credit?
 >
-> Answer: According to the reviews from students, Professor Md Mahfuzur Rahman offers extra credit opportunities. As one student review states, "extra credit for tophat assignments and attendence which can boost a lot." Another review mentions "Lots of extra credit opportunities (up to 7 pts) to make up for the abysmal test scores he gives out."
+> Answer: According to the student reviews, Professor Md Mahfuzur Rahman offers extra credit opportunities. As one review states, "Lots of extra credit opportunities (up to 7 pts) to make up for the abysmal test scores he gives out." Another review mentions, "extra credit for tophat assignments and attendence which can boost a lot so definitely go to class." Additionally, a review notes, "He gave massive free points at the end. Like if your grade was a 90, you would end with a 97." and "His exams are not even that bad and the HW assignments have crazy bonus." These reviews suggest that Professor Rahman provides various ways for students to earn extra credit.
 >
 > Retrieved from: professor_rahman.md
+
+**Example response 2 with source attribution (one validated run):**
+
+> Question: Is Professor Karim good for a student with no coding experience?
+>
+> Answer: According to the reviews, Professor Amin Karim is good for a student with no coding experience. One student review states, "I was nervous about taking professor Karim's class because I have never taken a comp sci course before. Now I am working on an AI startup. Best professor and very educational." This suggests that Professor Karim's class is accessible and beneficial for students with no prior coding experience.
+>
+> Retrieved from: professor_karim.md
 
 **Out-of-scope refusal example:**
 
 > Question: What is the best restaurant near campus?
 >
 > Answer: I don't have enough information in the available reviews to answer that.
->
-> Retrieved from: professor_esfahani.md, professor_kuzmin.md
 
 ---
 
@@ -166,6 +180,62 @@ The top chunks directly mention extra credit with specific details (TopHat assig
 | 6 | 0.984 | Amin Karim | CSC1301 | "Good professor. Exams are straightforward..." |
 
 The course metadata filter restricts retrieval to CSC1301 chunks. A professor diversity cap (at most 2 chunks per professor) then ensures all three CSC1301 instructors appear in the results — without it, Sunderraman's semantically strong reviews would fill all 8 slots and Karim would not appear at all (his first chunk ranks 9th without diversity capping). This is why Distances are higher for Karim (~0.98) than for Sunderraman (~0.80) — his reviews use less "recommendation" language, so they score lower on this query's embedding.
+
+**Query 4: "What is Professor Esfahani's attendance policy?"**
+
+| Rank | Distance | Professor | Course | Snippet |
+|------|----------|-----------|--------|---------|
+| 1 | 0.722 | Sayed Hossein Esfahani | CSC1301 | "He is an overall good teacher but attendance is mandatory..." |
+| 2 | 0.777 | Sayed Hossein Esfahani | CSC1301 | "Please for the love of god dont take this professor, attendance is mandatory..." |
+| 3 | 0.835 | Sayed Hossein Esfahani | CSC1301 | "He is actually a nice professor... attendance is Kahoot based..." |
+| 4 | 0.860 | Sayed Hossein Esfahani | CSC1301 | "He is a good man not much of a teacher..." |
+| 5 | 0.882 | Sayed Hossein Esfahani | CSC1301 | "Most of the ppl in class sleep, some ppl come at the end of class just to make attendance..." |
+| 6 | 0.891 | Sayed Hossein Esfahani | CSC1301 | "All the attendance is Kahoot based..." |
+| 7 | 0.922 | Sayed Hossein Esfahani | CSC1301 | "He makes python easy and enjoyable to learn..." |
+| 8 | 0.970 | Sayed Hossein Esfahani | CSC1301 | "Mandatory attendance is taken through kahoot..." |
+
+These chunks are relevant because they all come from the correct professor and several independently mention both parts of the answer: attendance is mandatory, and it is tracked via Kahoot. Even though the distances are weaker than in the Rahman query, the repeated signal across multiple chunks still grounds the answer well.
+
+**Query 5: "Is Professor Karim good for a student with no coding experience?"**
+
+| Rank | Distance | Professor | Course | Snippet |
+|------|----------|-----------|--------|---------|
+| 1 | 0.636 | Amin Karim | CSC1301 | "Professor Karim is one of the nicest people to ever exist..." |
+| 2 | 0.652 | Amin Karim | CSC1301 | "I was nervous about taking professor Karim's class because I have never taken a comp sci course before..." |
+| 3 | 0.666 | Amin Karim | CSC1301 | "Amin Karim is the best professor I have ever had..." |
+| 4 | 0.703 | Amin Karim | CSC1301 | "this is the best professor I have ever had..." |
+| 5 | 0.766 | Amin Karim | CSC1301 | "Easy class and great professor..." |
+| 6 | 0.770 | Amin Karim | CSC1301 | "Dr. Karim is my idol..." |
+| 7 | 0.775 | Amin Karim | CSC1301 | "Best professor I've ever had! Gives so many chances..." |
+| 8 | 0.785 | Amin Karim | CSC1301 | "Good professor can sometime arrive late. Exams are pretty straightforward..." |
+
+---
+
+## Query Interface
+
+The query interface is a Gradio web app launched with `.venv/bin/python3 app.py` and served locally at `http://127.0.0.1:7860`.
+
+**Input field:**
+
+- `Your question` — free-text question box where the user asks about a Georgia State CS professor or course.
+
+**Output fields:**
+
+- `Answer` — grounded natural-language response generated only from retrieved review chunks.
+- `Retrieved from` — source filename list built programmatically from retrieved chunk metadata.
+
+**Sample interaction transcript (validated end-to-end through the running app):**
+
+> User input (`Your question`): Which professor should I take for CSC 1301?
+>
+> System output (`Answer`): According to the student reviews, Professor Rajshekhar Sunderraman, Professor Sayed Hossein Esfahani, and Professor Amin Karim all have positive reviews for teaching CSC1301. Professor Rajshekhar Sunderraman is described by one review as "Probably the best professor you'll ever have" and another review states he is "great" and "extremely passionate" about the subject. Professor Sayed Hossein Esfahani is described by one review as "one of the best professors I've ever had" and is said to make the class "fun". Professor Amin Karim is described as a "great professor" with an "easy class". However, it's also worth considering the negative reviews for Professor Sayed Hossein Esfahani and Professor Rajshekhar Sunderraman, which mention that their classes can be challenging. Ultimately, the choice of professor depends on your individual learning style and preferences.
+>
+> System output (`Retrieved from`):
+> professor_sunderraman.md
+> professor_esfahani.md
+> professor_karim.md
+
+**End-to-end validation note:** The examples above were re-validated through the live Gradio app running on localhost on June 5, 2026. During validation, the app server was started first, the ChromaDB store was rebuilt successfully, and the queries were executed through the app's `/gradio_api/call/handle_query` endpoint.
 
 ---
 
